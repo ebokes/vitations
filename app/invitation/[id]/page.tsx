@@ -6,23 +6,19 @@ import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { GuestPreview } from '@/lib/guest/guest-preview';
-import { GuestForm } from '@/lib/guest/guest-form';
 import { InvitationRenderer } from '@/lib/invitation-renderer';
 import {
   InvitationContext,
   getEntitlementsForTier,
 } from '@/lib/invitation-renderer';
 import { getTemplateById } from '@/lib/templates';
-import {
-  getPublicInvitation,
-  isInvitationAccessible,
-  submitGuestRSVP,
-  getGuestRSVP,
-} from '@/lib/guest/invitations';
+import { getPublicInvitation, isInvitationAccessible } from '@/lib/guest/invitations';
+import { submitRSVP, getRSVPByPhone } from '@/lib/rsvp/store';
 import { InvitationData } from '@/lib/invitation-renderer/types';
+import { RSVPForm } from '@/lib/rsvp/rsvp-form';
 import Link from 'next/link';
 
-type ViewState = 'loading' | 'preview' | 'form' | 'full' | 'error' | 'already-rsvp';
+type ViewState = 'loading' | 'preview' | 'form' | 'full' | 'error';
 
 export default function GuestInvitationPage() {
   const params = useParams();
@@ -30,10 +26,12 @@ export default function GuestInvitationPage() {
 
   const [viewState, setViewState] = React.useState<ViewState>('loading');
   const [invitation, setInvitation] = React.useState<InvitationData | null>(null);
-  const [guestPhone, setGuestPhone] = React.useState<string>('');
   const [errorType, setErrorType] = React.useState<'not-found' | 'inactive' | 'expired'>('not-found');
 
   React.useEffect(() => {
+    // Check for existing RSVP in local storage
+    const savedPhone = localStorage?.getItem(`rsvp_phone_${invitationId}`);
+
     // Simulate loading invitation data
     const timer = setTimeout(() => {
       const inv = getPublicInvitation(invitationId);
@@ -51,6 +49,16 @@ export default function GuestInvitationPage() {
       }
 
       setInvitation(inv);
+
+      // If returning guest with existing RSVP, go to full view
+      if (savedPhone) {
+        const existingRsvp = getRSVPByPhone(invitationId, savedPhone);
+        if (existingRsvp) {
+          setViewState('full');
+          return;
+        }
+      }
+
       setViewState('preview');
     }, 500);
 
@@ -61,10 +69,7 @@ export default function GuestInvitationPage() {
     setViewState('form');
   };
 
-  const handleFormSubmit = async (name: string, phone: string) => {
-    // Submit RSVP
-    submitGuestRSVP(invitationId, name, phone, 'yes');
-    setGuestPhone(phone);
+  const handleRSVPSuccess = () => {
     setViewState('full');
   };
 
@@ -116,9 +121,58 @@ export default function GuestInvitationPage() {
     return <GuestPreview invitation={invitation} onAccept={handleAccept} />;
   }
 
-  // Form state
+  // Form state - Use new RSVP form
   if (viewState === 'form' && invitation) {
-    return <GuestForm invitation={invitation} onSubmit={handleFormSubmit} />;
+    const template = getTemplateById(invitation.templateId);
+
+    return (
+      <div
+        className="min-h-screen flex flex-col"
+        style={{
+          fontFamily: template?.visualConfig.fontFamily,
+          background: template?.visualConfig.backgroundType === 'gradient'
+            ? template.visualConfig.backgroundValue
+            : template?.visualConfig.backgroundValue || '#faf8f5',
+        }}
+      >
+        {/* Header */}
+        <header
+          className="py-4 text-center"
+          style={{ backgroundColor: template?.visualConfig.secondaryColor }}
+        >
+          <Sparkles
+            className="mx-auto h-8 w-8"
+            style={{ color: template?.visualConfig.primaryColor }}
+          />
+        </header>
+
+        {/* Form Content */}
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md">
+            <RSVPForm
+              invitationId={invitationId}
+              primaryColor={template?.visualConfig.primaryColor}
+              secondaryColor={template?.visualConfig.secondaryColor}
+              accentColor={template?.visualConfig.accentColor}
+              onSuccess={handleRSVPSuccess}
+            />
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer
+          className="py-4 text-center"
+          style={{ backgroundColor: template?.visualConfig.secondaryColor }}
+        >
+          <p
+            className="text-xs"
+            style={{ color: template?.visualConfig.accentColor }}
+          >
+            Powered by Vitations
+          </p>
+        </footer>
+      </div>
+    );
   }
 
   // Full invitation state
@@ -145,7 +199,7 @@ export default function GuestInvitationPage() {
         {/* Thank You Banner */}
         <div className="bg-primary-600 py-4 text-center text-white">
           <p className="text-sm font-medium">
-            Thank you for accepting! Enjoy the celebration.
+            Thank you for your RSVP! Enjoy the celebration.
           </p>
         </div>
 
