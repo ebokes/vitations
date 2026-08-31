@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './design-tokens.css';
+
+@layer base {
+  * {
+    @apply border-neutral-200;
+  }
+
+  body {
+    @apply bg-white text-neutral-900;
+    font-family: var(--font-sans);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Typography defaults */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-primary-100 text-primary-900;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Typography utilities */
+  .text-display {
+    font-family: var(--font-display);
+    font-size: var(--text-5xl);
+    line-height: var(--leading-tight);
+    font-weight: var(--font-bold);
+    letter-spacing: -0.02em;
+  }
+
+  .text-h1 {
+    font-size: var(--text-4xl);
+    line-height: var(--leading-tight);
+    font-weight: var(--font-bold);
+  }
+
+  .text-h2 {
+    font-size: var(--text-3xl);
+    line-height: var(--leading-tight);
+    font-weight: var(--font-semibold);
+  }
+
+  .text-h3 {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    font-weight: var(--font-semibold);
+  }
+
+  .text-h4 {
+    font-size: var(--text-xl);
+    line-height: var(--leading-snug);
+    font-weight: var(--font-semibold);
+  }
+
+  .text-body {
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    font-weight: var(--font-normal);
+  }
+
+  .text-small {
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+  }
+
+  .text-caption {
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--color-text-tertiary);
+  }
+
+  .text-label {
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    font-weight: var(--font-medium);
+  }
+
+  /* Mobile-first responsive typography */
+  @media (min-width: 768px) {
+    .text-display {
+      font-size: var(--text-6xl);
+    }
+    .text-h1 {
+      font-size: var(--text-5xl);
+    }
+    .text-h2 {
+      font-size: var(--text-4xl);
+    }
+    .text-h3 {
+      font-size: var(--text-3xl);
+    }
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--slide-distance, 20px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
