@@ -2,9 +2,11 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Menu, X, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Menu, X, Sparkles, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/components/auth-provider';
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -15,7 +17,18 @@ const navigation = [
 ];
 
 export function Header() {
+  const router = useRouter();
+  const { user, loading, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [signingOut, setSigningOut] = React.useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await signOut();
+    setMobileMenuOpen(false);
+    router.push('/');
+    router.refresh();
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -41,16 +54,42 @@ export function Header() {
 
         {/* Desktop CTA */}
         <div className="hidden items-center gap-4 md:flex">
-          <Link href="/sign-in">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-          </Link>
-          <Link href="/custom-invitation">
-            <Button variant="gold" size="sm">
-              Create Your Invitation
-            </Button>
-          </Link>
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+          ) : user ? (
+            <>
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm">
+                  Dashboard
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                disabled={signingOut}
+              >
+                {signingOut ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="h-4 w-4" />
+                )}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link href="/auth/signin">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/custom-invitation">
+                <Button variant="gold" size="sm">
+                  Create Your Invitation
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile menu button */}
@@ -85,16 +124,45 @@ export function Header() {
               </Link>
             ))}
             <div className="mt-4 space-y-2 border-t border-neutral-200 pt-4">
-              <Link href="/sign-in" className="block">
-                <Button variant="outline" className="w-full">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/custom-invitation" className="block">
-                <Button variant="gold" className="w-full">
-                  Create Your Invitation
-                </Button>
-              </Link>
+              {loading ? (
+                <div className="flex justify-center py-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+                </div>
+              ) : user ? (
+                <>
+                  <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full">
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={handleSignOut}
+                    disabled={signingOut}
+                  >
+                    {signingOut ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogOut className="mr-2 h-4 w-4" />
+                    )}
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth/signin" className="block" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/custom-invitation" className="block" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="gold" className="w-full">
+                      Create Your Invitation
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
