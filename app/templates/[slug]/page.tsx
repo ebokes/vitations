@@ -2,12 +2,17 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Sparkles, Box, Eye, Smartphone, Monitor } from 'lucide-react';
+import { ArrowLeft, Smartphone, Monitor, Box, Sparkles, Loader2 } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  getTemplateBySlug,
+  loadTemplateRenderer,
+  TemplateRendererContract,
+  Template,
+} from '@/lib/templates';
 
 interface TemplatePreviewPageProps {
   params: { slug: string };
@@ -15,19 +20,85 @@ interface TemplatePreviewPageProps {
 
 export default function TemplatePreviewPage({ params }: TemplatePreviewPageProps) {
   const [previewMode, setPreviewMode] = React.useState<'mobile' | 'desktop'>('mobile');
+  const [template, setTemplate] = React.useState<Template | null>(null);
+  const [Renderer, setRenderer] = React.useState<TemplateRendererContract | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  // Mock template data
-  const template = {
-    id: params.slug,
-    name: 'Royal Elegance',
-    category: 'Traditional Wedding',
-    designType: '2d_basic',
-    minimumPackage: 'essential',
-    description: 'A beautiful template inspired by traditional Nigerian royalty. Features elegant gold accents and warm earth tones.',
+  React.useEffect(() => {
+    const t = getTemplateBySlug(params.slug);
+    if (t) {
+      setTemplate(t);
+      loadTemplateRenderer(t.rendererType).then((R) => {
+        setRenderer(() => R);
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+  }, [params.slug]);
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <main className="flex min-h-screen items-center justify-center bg-neutral-50">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!template) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-neutral-50">
+          <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
+            <h1 className="text-2xl font-bold text-neutral-900">Template Not Found</h1>
+            <p className="mt-4 text-neutral-600">
+              The template you&apos;re looking for doesn&apos;t exist or has been retired.
+            </p>
+            <Link href="/templates" className="mt-8 inline-block">
+              <Button>Browse Templates</Button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  const hasAnimation = template.rendererType === 'animated';
+  const has3D = template.rendererType === '3d';
+
+  // Mock data for preview
+  const previewData = {
+    celebrantName: 'Adaeze Okonkwo',
+    coCelebrantName: 'Emeka Nwosu',
+    eventTitle: 'Adaeze & Emeka\'s Wedding',
+    events: [
+      {
+        type: 'traditional_wedding',
+        date: '2024-12-25',
+        time: '10:00 AM',
+        venue: 'Eko Hotels & Suites',
+        address: '14 Adetokunbo Ademola St, Victoria Island, Lagos',
+      },
+      {
+        type: 'reception',
+        date: '2024-12-25',
+        time: '4:00 PM',
+        venue: 'Eko Hotels & Suites',
+        address: '14 Adetokunbo Ademola St, Victoria Island, Lagos',
+      },
+    ],
+    features: {
+      songLink: '#',
+      giftRegistryEnabled: true,
+      livestreamUrl: '',
+    },
   };
-
-  const hasAnimation = template.designType.includes('animated') || template.designType.includes('advanced');
-  const has3D = template.designType.includes('3d');
 
   return (
     <>
@@ -80,14 +151,13 @@ export default function TemplatePreviewPage({ params }: TemplatePreviewPageProps
                   }`}
                 >
                   <div
-                    className={`bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center ${
+                    className={`overflow-y-auto ${
                       previewMode === 'mobile' ? 'aspect-[9/16]' : 'aspect-video'
                     }`}
                   >
-                    <div className="text-center">
-                      <Sparkles className="mx-auto h-16 w-16 text-primary-600/30" />
-                      <p className="mt-4 text-sm text-primary-600/50">Template Preview</p>
-                    </div>
+                    {Renderer && (
+                      <Renderer template={template} data={previewData} mode="preview" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -111,42 +181,35 @@ export default function TemplatePreviewPage({ params }: TemplatePreviewPageProps
                     </Badge>
                   )}
                 </div>
-                <p className="mt-2 text-neutral-600">{template.category}</p>
+                <p className="mt-2 text-neutral-600 capitalize">{template.designStyle}</p>
               </div>
 
               <p className="text-neutral-700">{template.description}</p>
 
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-                <h3 className="font-medium text-neutral-900">Minimum Package Required</h3>
-                <p className="mt-1 text-sm text-neutral-600 capitalize">
-                  {template.minimumPackage}
-                </p>
+                <h3 className="font-medium text-neutral-900">Supported Packages</h3>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {template.supportedPackages.map((pkg) => (
+                    <Badge key={pkg} variant="secondary" className="capitalize">
+                      {pkg}
+                    </Badge>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <h3 className="font-medium text-neutral-900">Features</h3>
-                <ul className="space-y-2 text-sm text-neutral-600">
-                  <li className="flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-primary-600" />
-                    Mobile and desktop preview
-                  </li>
-                  {hasAnimation && (
-                    <li className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-primary-600" />
-                      Animated elements
-                    </li>
-                  )}
-                  {has3D && (
-                    <li className="flex items-center gap-2">
-                      <Box className="h-4 w-4 text-primary-600" />
-                      3D interactive elements
-                    </li>
-                  )}
-                </ul>
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                <h3 className="font-medium text-neutral-900">Supported Events</h3>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {template.supportedEventTypes.map((et) => (
+                    <Badge key={et} variant="outline" className="capitalize">
+                      {et.replace(/_/g, ' ')}
+                    </Badge>
+                  ))}
+                </div>
               </div>
 
               <div className="flex gap-4">
-                <Link href="/packages" className="flex-1">
+                <Link href="/setup" className="flex-1">
                   <Button variant="gold" size="lg" className="w-full">
                     Use This Template
                   </Button>

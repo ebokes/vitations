@@ -2,71 +2,160 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Box, Sparkles } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
-import { TemplateCard } from '@/components/template-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  filterTemplates,
+  Template,
+  PackageTier,
+  EventType,
+  DesignStyle,
+  TemplateRendererType,
+} from '@/lib/templates';
 import { cn } from '@/lib/utils';
 
-const categories = [
-  { id: 'all', name: 'All Templates' },
+const eventTypes: { id: EventType; name: string }[] = [
   { id: 'traditional_wedding', name: 'Traditional Wedding' },
   { id: 'white_wedding', name: 'White Wedding' },
   { id: 'reception', name: 'Reception' },
   { id: 'after_party', name: 'After Party' },
   { id: 'birthday', name: 'Birthday' },
   { id: 'anniversary', name: 'Anniversary' },
-  { id: 'other', name: 'Other Celebrations' },
 ];
 
-const designStyles = [
+const designStyles: { id: DesignStyle; name: string }[] = [
   { id: 'classic', name: 'Classic' },
   { id: 'elegant', name: 'Elegant' },
   { id: 'modern', name: 'Modern' },
-  { id: 'minimal', name: 'Minimal' },
   { id: 'floral', name: 'Floral' },
   { id: 'luxury', name: 'Luxury' },
   { id: 'traditional', name: 'Traditional' },
 ];
 
-const capabilities = [
+const rendererTypes: { id: TemplateRendererType; name: string }[] = [
   { id: '2d', name: '2D' },
   { id: 'animated', name: 'Animated' },
   { id: '3d', name: '3D' },
 ];
 
-const mockTemplates = [
-  { id: '1', name: 'Royal Elegance', category: 'Traditional Wedding', designType: '2d_basic', minimumPackage: 'essential' },
-  { id: '2', name: 'Modern Grace', category: 'White Wedding', designType: '2d_animated', minimumPackage: 'premium' },
-  { id: '3', name: 'Golden Celebration', category: 'Reception', designType: '3d_selected', minimumPackage: 'premium' },
-  { id: '4', name: 'Classic Charm', category: 'Birthday', designType: '2d_basic', minimumPackage: 'essential' },
-  { id: '5', name: 'Floral Dreams', category: 'Traditional Wedding', designType: '2d_animated', minimumPackage: 'premium' },
-  { id: '6', name: 'Luxury Noir', category: 'White Wedding', designType: '3d_advanced', minimumPackage: 'ultimate' },
-  { id: '7', name: 'Traditional Pride', category: 'Traditional Wedding', designType: '2d_basic', minimumPackage: 'essential' },
-  { id: '8', name: 'Minimalist Chic', category: 'Birthday', designType: '2d_basic', minimumPackage: 'essential' },
-];
+function TemplateCard({ template }: { template: Template }) {
+  const hasAnimation = template.rendererType === 'animated';
+  const has3D = template.rendererType === '3d';
+
+  return (
+    <Link href={`/templates/${template.slug}`}>
+      <Card className="group overflow-hidden transition-all hover:shadow-lg">
+        <div
+          className="aspect-[3/4] flex items-center justify-center"
+          style={{
+            background: template.visualConfig.backgroundType === 'gradient'
+              ? template.visualConfig.backgroundValue
+              : template.visualConfig.backgroundValue,
+          }}
+        >
+          <div className="text-center">
+            <Sparkles
+              className="mx-auto h-12 w-12"
+              style={{ color: `${template.visualConfig.primaryColor}40` }}
+            />
+            <p
+              className="mt-2 text-sm font-medium"
+              style={{ color: template.visualConfig.primaryColor }}
+            >
+              {template.name}
+            </p>
+          </div>
+        </div>
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-semibold text-neutral-900 group-hover:text-primary-600">
+                {template.name}
+              </h3>
+              <p className="text-sm text-neutral-600">{template.description}</p>
+            </div>
+            <div className="flex gap-1">
+              {hasAnimation && (
+                <Badge variant="secondary" className="text-xs">
+                  <Sparkles className="mr-1 h-3 w-3" />
+                  Animated
+                </Badge>
+              )}
+              {has3D && (
+                <Badge variant="secondary" className="text-xs">
+                  <Box className="mr-1 h-3 w-3" />
+                  3D
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1">
+            {template.supportedEventTypes.slice(0, 3).map((et) => (
+              <Badge key={et} variant="outline" className="text-xs capitalize">
+                {et.replace(/_/g, ' ')}
+              </Badge>
+            ))}
+            {template.supportedEventTypes.length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{template.supportedEventTypes.length - 3} more
+              </Badge>
+            )}
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-xs text-neutral-500">Min package:</span>
+            <Badge variant="secondary" className="text-xs capitalize">
+              {template.supportedPackages[0]}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
 
 export default function TemplatesPage() {
-  const [selectedCategory, setSelectedCategory] = React.useState('all');
-  const [selectedStyle, setSelectedStyle] = React.useState<string | null>(null);
-  const [selectedCapability, setSelectedCapability] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedEventTypes, setSelectedEventTypes] = React.useState<EventType[]>([]);
+  const [selectedStyles, setSelectedStyles] = React.useState<DesignStyle[]>([]);
+  const [selectedRenderers, setSelectedRenderers] = React.useState<TemplateRendererType[]>([]);
+  const [selectedPackage, setSelectedPackage] = React.useState<PackageTier | null>(null);
   const [showFilters, setShowFilters] = React.useState(false);
 
-  const filteredTemplates = mockTemplates.filter((template) => {
-    if (selectedCategory !== 'all' && template.category.toLowerCase().replace(' ', '_') !== selectedCategory) {
-      return false;
-    }
-    if (searchQuery && !template.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
+  const templates = React.useMemo(() => {
+    return filterTemplates({
+      search: searchQuery || undefined,
+      eventTypes: selectedEventTypes.length > 0 ? selectedEventTypes : undefined,
+      designStyles: selectedStyles.length > 0 ? selectedStyles : undefined,
+      rendererTypes: selectedRenderers.length > 0 ? selectedRenderers : undefined,
+      packageTier: selectedPackage || undefined,
+    });
+  }, [searchQuery, selectedEventTypes, selectedStyles, selectedRenderers, selectedPackage]);
 
-  const activeFilters = [selectedStyle, selectedCapability].filter(Boolean);
+  const toggleFilter = <T extends string>(
+    current: T[],
+    setFilter: React.Dispatch<React.SetStateAction<T[]>>,
+    value: T
+  ) => {
+    setFilter(
+      current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
+    );
+  };
+
+  const activeFilterCount =
+    selectedEventTypes.length + selectedStyles.length + selectedRenderers.length + (selectedPackage ? 1 : 0);
+
+  const clearFilters = () => {
+    setSelectedEventTypes([]);
+    setSelectedStyles([]);
+    setSelectedRenderers([]);
+    setSelectedPackage(null);
+    setSearchQuery('');
+  };
 
   return (
     <>
@@ -101,143 +190,149 @@ export default function TemplatesPage() {
               >
                 <Filter className="h-4 w-4" />
                 Filters
-                {activeFilters.length > 0 && (
+                {activeFilterCount > 0 && (
                   <Badge variant="secondary" className="ml-1">
-                    {activeFilters.length}
+                    {activeFilterCount}
                   </Badge>
                 )}
               </Button>
             </div>
 
             {/* Active filters */}
-            {activeFilters.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selectedStyle && (
-                  <Badge variant="secondary" className="gap-1">
-                    {designStyles.find((s) => s.id === selectedStyle)?.name}
-                    <button onClick={() => setSelectedStyle(null)}>
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedEventTypes.map((et) => (
+                  <Badge key={et} variant="secondary" className="gap-1 capitalize">
+                    {et.replace(/_/g, ' ')}
+                    <button onClick={() => toggleFilter(selectedEventTypes, setSelectedEventTypes, et)}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {selectedStyles.map((s) => (
+                  <Badge key={s} variant="secondary" className="gap-1 capitalize">
+                    {s}
+                    <button onClick={() => toggleFilter(selectedStyles, setSelectedStyles, s)}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {selectedRenderers.map((r) => (
+                  <Badge key={r} variant="secondary" className="gap-1 uppercase">
+                    {r}
+                    <button onClick={() => toggleFilter(selectedRenderers, setSelectedRenderers, r)}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {selectedPackage && (
+                  <Badge variant="secondary" className="gap-1 capitalize">
+                    {selectedPackage}
+                    <button onClick={() => setSelectedPackage(null)}>
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
                 )}
-                {selectedCapability && (
-                  <Badge variant="secondary" className="gap-1">
-                    {capabilities.find((c) => c.id === selectedCapability)?.name}
-                    <button onClick={() => setSelectedCapability(null)}>
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  Clear All
+                </Button>
               </div>
             )}
 
             {/* Filter panels */}
             {showFilters && (
-              <div className="grid gap-6 rounded-lg border border-neutral-200 bg-white p-4 sm:grid-cols-3">
+              <div className="grid gap-6 rounded-lg border border-neutral-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <h3 className="mb-3 text-sm font-medium text-neutral-900">Event Type</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {eventTypes.map((et) => (
+                      <button
+                        key={et.id}
+                        onClick={() => toggleFilter(selectedEventTypes, setSelectedEventTypes, et.id)}
+                        className={cn(
+                          'rounded-full px-3 py-1 text-sm transition-colors',
+                          selectedEventTypes.includes(et.id)
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                        )}
+                      >
+                        {et.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div>
                   <h3 className="mb-3 text-sm font-medium text-neutral-900">Design Style</h3>
                   <div className="flex flex-wrap gap-2">
-                    {designStyles.map((style) => (
+                    {designStyles.map((s) => (
                       <button
-                        key={style.id}
-                        onClick={() => setSelectedStyle(selectedStyle === style.id ? null : style.id)}
+                        key={s.id}
+                        onClick={() => toggleFilter(selectedStyles, setSelectedStyles, s.id)}
                         className={cn(
                           'rounded-full px-3 py-1 text-sm transition-colors',
-                          selectedStyle === style.id
+                          selectedStyles.includes(s.id)
                             ? 'bg-primary-600 text-white'
                             : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
                         )}
                       >
-                        {style.name}
+                        {s.name}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <h3 className="mb-3 text-sm font-medium text-neutral-900">Capability</h3>
+                  <h3 className="mb-3 text-sm font-medium text-neutral-900">Template Type</h3>
                   <div className="flex flex-wrap gap-2">
-                    {capabilities.map((cap) => (
+                    {rendererTypes.map((r) => (
                       <button
-                        key={cap.id}
-                        onClick={() => setSelectedCapability(selectedCapability === cap.id ? null : cap.id)}
+                        key={r.id}
+                        onClick={() => toggleFilter(selectedRenderers, setSelectedRenderers, r.id)}
                         className={cn(
                           'rounded-full px-3 py-1 text-sm transition-colors',
-                          selectedCapability === cap.id
+                          selectedRenderers.includes(r.id)
                             ? 'bg-primary-600 text-white'
                             : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
                         )}
                       >
-                        {cap.name}
+                        {r.name}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="flex items-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedStyle(null);
-                      setSelectedCapability(null);
-                    }}
-                  >
-                    Clear All
-                  </Button>
+                <div>
+                  <h3 className="mb-3 text-sm font-medium text-neutral-900">Package</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(['essential', 'premium', 'ultimate'] as PackageTier[]).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setSelectedPackage(selectedPackage === p ? null : p)}
+                        className={cn(
+                          'rounded-full px-3 py-1 text-sm capitalize transition-colors',
+                          selectedPackage === p
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                        )}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Category tabs */}
-          <div className="mb-8 overflow-x-auto border-b border-neutral-200">
-            <div className="flex gap-1">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={cn(
-                    'whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors',
-                    selectedCategory === category.id
-                      ? 'border-primary-600 text-primary-600'
-                      : 'border-transparent text-neutral-600 hover:border-neutral-300 hover:text-neutral-900'
-                  )}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Templates grid */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredTemplates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                id={template.id}
-                name={template.name}
-                category={template.category}
-                designType={template.designType as any}
-                minimumPackage={template.minimumPackage as any}
-                onPreview={(id) => {
-                  window.location.href = `/templates/${id}`;
-                }}
-              />
+            {templates.map((template) => (
+              <TemplateCard key={template.id} template={template} />
             ))}
           </div>
 
-          {filteredTemplates.length === 0 && (
+          {templates.length === 0 && (
             <div className="py-12 text-center">
               <p className="text-neutral-600">No templates found matching your criteria.</p>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setSelectedCategory('all');
-                  setSelectedStyle(null);
-                  setSelectedCapability(null);
-                  setSearchQuery('');
-                }}
-                className="mt-4"
-              >
+              <Button variant="ghost" onClick={clearFilters} className="mt-4">
                 Clear Filters
               </Button>
             </div>
