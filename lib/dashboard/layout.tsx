@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { DashboardTab, DashboardNavigationItem, DASHBOARD_NAVIGATION } from './types';
 import { useDashboardNavigation } from './hooks';
+import { NotificationBell } from '@/lib/notifications/components';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -113,19 +114,25 @@ export function DashboardLayout({ children, userName, userEmail, packageTier }: 
             </nav>
 
             {/* Footer */}
-            <div className="p-4 border-t border-neutral-200">
-              <Link
-                href="/setup"
-                className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
-              >
-                <span>Edit Invitation</span>
-              </Link>
+            <div className="p-4 border-t border-neutral-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <Link
+                  href="/setup"
+                  className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
+                >
+                  <span>Edit Invitation</span>
+                </Link>
+                <NotificationBell />
+              </div>
             </div>
           </div>
         </aside>
 
         {/* Main Content */}
         <main className="lg:ml-64 p-4 lg:p-8">
+          <div className="flex items-center justify-end mb-4 lg:hidden">
+            <NotificationBell />
+          </div>
           {children}
         </main>
       </div>

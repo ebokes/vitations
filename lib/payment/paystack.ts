@@ -154,7 +154,11 @@ export function verifyWebhookSignature(
     .update(payload)
     .digest('hex');
 
-  return hash === signature;
+  // Use constant-time comparison to prevent timing attacks
+  if (hash.length !== signature.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature));
 }
 
 /**

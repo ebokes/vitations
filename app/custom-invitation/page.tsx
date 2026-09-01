@@ -3,27 +3,18 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Sparkles } from 'lucide-react';
-
-const customInvitationSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().min(10, 'Please enter a valid phone number'),
-  email: z.string().email('Please enter a valid email address'),
-  eventType: z.string().optional(),
-  message: z.string().optional(),
-});
-
-type CustomInvitationFormData = z.infer<typeof customInvitationSchema>;
+import { submitCustomRequest } from '@/lib/custom-requests/api';
+import { customInvitationSchema, type CustomInvitationFormData } from '@/lib/custom-requests/schema';
 
 export default function CustomInvitationPage() {
   const [submitted, setSubmitted] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const {
     register,
@@ -34,9 +25,18 @@ export default function CustomInvitationPage() {
   });
 
   const onSubmit = async (data: CustomInvitationFormData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setSubmitted(true);
+    setError(null);
+    const result = await submitCustomRequest({
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+    });
+
+    if (result.success) {
+      setSubmitted(true);
+    } else {
+      setError(result.error || 'Failed to submit request. Please try again.');
+    }
   };
 
   return (
@@ -75,6 +75,12 @@ export default function CustomInvitationPage() {
             <Card>
               <CardContent className="p-6 sm:p-8">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  {error && (
+                    <div className="rounded-lg bg-red-50 p-4">
+                      <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                  )}
+
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-neutral-900">
                       Your Name *
@@ -120,31 +126,6 @@ export default function CustomInvitationPage() {
                     {errors.email && (
                       <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
                     )}
-                  </div>
-
-                  <div>
-                    <label htmlFor="eventType" className="block text-sm font-medium text-neutral-900">
-                      Event Type (Optional)
-                    </label>
-                    <Input
-                      id="eventType"
-                      placeholder="e.g., Wedding, Birthday, Anniversary"
-                      className="mt-1"
-                      {...register('eventType')}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="message" className="block text-sm font-medium text-neutral-900">
-                      Additional Details (Optional)
-                    </label>
-                    <Textarea
-                      id="message"
-                      placeholder="Tell us about your vision, preferred colors, theme, or any specific requirements..."
-                      rows={4}
-                      className="mt-1"
-                      {...register('message')}
-                    />
                   </div>
 
                   <div className="rounded-lg bg-primary-50 p-4">

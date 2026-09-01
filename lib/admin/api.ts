@@ -12,9 +12,28 @@ import type {
 } from './types';
 import type { InvitationStatus } from '@/types/database';
 
+// Helper: verify current user is admin or super_admin
+async function verifyAdmin() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
+    throw new Error('Unauthorized: admin role required');
+  }
+
+  return supabase;
+}
+
 // Fetch admin dashboard stats
 export async function fetchAdminStats(): Promise<AdminDashboardStats> {
-  const supabase = await createClient();
+  const supabase = await verifyAdmin();
 
   const [customersRes, invitationsRes, mediaRes, customRes, paymentsRes] = await Promise.all([
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
@@ -72,7 +91,7 @@ export async function fetchCustomers(params?: {
   page?: number;
   limit?: number;
 }): Promise<{ data: AdminCustomer[]; total: number }> {
-  const supabase = await createClient();
+  const supabase = await verifyAdmin();
   const page = params?.page || 1;
   const limit = params?.limit || 20;
   const from = (page - 1) * limit;
@@ -156,7 +175,7 @@ export async function fetchInvitations(params?: {
   page?: number;
   limit?: number;
 }): Promise<{ data: AdminInvitation[]; total: number }> {
-  const supabase = await createClient();
+  const supabase = await verifyAdmin();
   const page = params?.page || 1;
   const limit = params?.limit || 20;
   const from = (page - 1) * limit;
@@ -201,7 +220,7 @@ export async function fetchInvitations(params?: {
 
 // Fetch invitation detail
 export async function fetchInvitationDetail(invitationId: string): Promise<AdminInvitationDetail | null> {
-  const supabase = await createClient();
+  const supabase = await verifyAdmin();
 
   const { data: invitation } = await supabase
     .from('invitations')
@@ -254,7 +273,7 @@ export async function fetchMediaForModeration(params?: {
   page?: number;
   limit?: number;
 }): Promise<{ data: AdminMediaItem[]; total: number }> {
-  const supabase = await createClient();
+  const supabase = await verifyAdmin();
   const page = params?.page || 1;
   const limit = params?.limit || 20;
   const from = (page - 1) * limit;
@@ -302,7 +321,7 @@ export async function fetchCustomRequests(params?: {
   page?: number;
   limit?: number;
 }): Promise<{ data: AdminCustomRequest[]; total: number }> {
-  const supabase = await createClient();
+  const supabase = await verifyAdmin();
   const page = params?.page || 1;
   const limit = params?.limit || 20;
   const from = (page - 1) * limit;
@@ -342,7 +361,7 @@ export async function fetchAuditLogs(params?: {
   page?: number;
   limit?: number;
 }): Promise<{ data: AdminAuditLog[]; total: number }> {
-  const supabase = await createClient();
+  const supabase = await verifyAdmin();
   const page = params?.page || 1;
   const limit = params?.limit || 50;
   const from = (page - 1) * limit;
