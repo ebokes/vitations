@@ -3,9 +3,9 @@
 import * as React from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { DashboardLayout } from '@/lib/dashboard/layout';
-import { DashboardOverview } from '@/lib/dashboard/overview';
+import { DashboardAccount } from '@/lib/dashboard/account';
 
-export default function DashboardPage() {
+export default function DashboardAccountPage() {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -26,7 +26,7 @@ export default function DashboardPage() {
       userEmail={user.email}
       packageTier="ultimate"
     >
-      <DashboardOverview />
+      <DashboardAccount />
     </DashboardLayout>
   );
 }

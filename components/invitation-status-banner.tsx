@@ -46,6 +46,24 @@ const statusConfig: Record<
     variant: 'warning',
     bgColor: 'bg-yellow-50',
   },
+  approved: {
+    icon: CheckCircle,
+    title: 'Approved',
+    variant: 'success',
+    bgColor: 'bg-green-50',
+  },
+  published: {
+    icon: Calendar,
+    title: 'Published',
+    variant: 'success',
+    bgColor: 'bg-primary-50',
+  },
+  archived: {
+    icon: Calendar,
+    title: 'Archived',
+    variant: 'secondary',
+    bgColor: 'bg-neutral-50',
+  },
   completed: {
     icon: Calendar,
     title: 'Event Complete',

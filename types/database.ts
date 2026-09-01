@@ -8,7 +8,7 @@ export type Json =
 
 // Enums
 export type UserRole = 'customer' | 'admin' | 'super_admin'
-export type InvitationStatus = 'draft' | 'submitted' | 'locked' | 'unlocked_by_admin' | 'completed'
+export type InvitationStatus = 'draft' | 'submitted' | 'approved' | 'published' | 'archived' | 'locked' | 'unlocked_by_admin' | 'completed'
 export type EventType = 'traditional_wedding' | 'white_wedding' | 'reception' | 'after_party'
 export type PackageTier = 'essential' | 'premium' | 'ultimate'
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded'
